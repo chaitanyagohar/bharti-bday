@@ -94,58 +94,35 @@ const FontLoader = () => (
   `}</style>
 );
 
-const BIRTH = new Date("2001-04-16T00:00:00+05:30"); // important for India time
+// ─── BIRTH TIMER ─────────────────────────────────────────────────────────────
+const BIRTH = new Date("2001-04-16T00:00:00");
 
-const pad = (n: number) => String(n).padStart(2, "0");
+const pad = (n) => String(n).padStart(2, "0");
 
 const BirthTimer = () => {
-  const [now, setNow] = useState(new Date());
+  const [elapsed, setElapsed] = useState(() => Date.now() - BIRTH.getTime());
 
   useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 1000);
+    const id = setInterval(() => setElapsed(Date.now() - BIRTH.getTime()), 1000);
     return () => clearInterval(id);
   }, []);
 
-  // --- CALCULATIONS ---
-  let years = now.getFullYear() - BIRTH.getFullYear();
-
-  const thisYearBirthday = new Date(
-    now.getFullYear(),
-    BIRTH.getMonth(),
-    BIRTH.getDate(),
-    BIRTH.getHours(),
-    BIRTH.getMinutes(),
-    BIRTH.getSeconds()
-  );
-
-  // adjust if birthday hasn't happened yet this year
-  if (now < thisYearBirthday) {
-    years--;
-  }
-
-  const lastBirthday = new Date(
-    now.getFullYear() - (now < thisYearBirthday ? 1 : 0),
-    BIRTH.getMonth(),
-    BIRTH.getDate(),
-    BIRTH.getHours(),
-    BIRTH.getMinutes(),
-    BIRTH.getSeconds()
-  );
-
-  const diff = now.getTime() - lastBirthday.getTime();
-
-  const totalSec = Math.floor(diff / 1000);
-  const seconds = totalSec % 60;
-  const totalMin = Math.floor(totalSec / 60);
-  const minutes = totalMin % 60;
-  const totalHr = Math.floor(totalMin / 60);
-  const hours = totalHr % 24;
-  const days = Math.floor(totalHr / 24);
+  const totalSec  = Math.floor(elapsed / 1000);
+  const seconds   = totalSec % 60;
+  const totalMin  = Math.floor(totalSec / 60);
+  const minutes   = totalMin % 60;
+  const totalHr   = Math.floor(totalMin / 60);
+  const hours     = totalHr % 24;
+  const totalDays = Math.floor(totalHr / 24);
+  const years     = Math.floor(totalDays / 365.25);
+  const months    = Math.floor((totalDays % 365.25) / 30.44);
+  const days      = Math.floor(totalDays % 30.44);
 
   const units = [
-    { label: "Years", value: years },
-    { label: "Days", value: days },
-    { label: "Hours", value: pad(hours) },
+    { label: "Years",   value: years },
+    { label: "Months",  value: months },
+    { label: "Days",    value: days },
+    { label: "Hours",   value: pad(hours) },
     { label: "Minutes", value: pad(minutes) },
     { label: "Seconds", value: pad(seconds) },
   ];
@@ -159,47 +136,36 @@ const BirthTimer = () => {
     >
       <p style={{
         fontFamily: "'DM Sans', sans-serif",
-        color: "#9f6472",
-        fontSize: 11,
-        letterSpacing: 4,
-        textTransform: "uppercase",
-        marginBottom: 14,
+        color: "#9f6472", fontSize: 11,
+        letterSpacing: 4, textTransform: "uppercase", marginBottom: 14,
       }}>
         The world got luckier since
       </p>
 
       <div style={{
-        display: "flex",
-        gap: 10,
-        justifyContent: "center",
-        flexWrap: "wrap",
+        display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap",
       }}>
         {units.map(({ label, value }) => (
           <div key={label} style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
+            display: "flex", flexDirection: "column", alignItems: "center",
             background: "rgba(244,63,94,.06)",
             border: "1px solid rgba(244,63,94,.18)",
-            borderRadius: 14,
-            padding: "10px 14px",
-            minWidth: 58,
+            borderRadius: 14, padding: "10px 14px", minWidth: 58,
           }}>
             <span style={{
               fontFamily: "'Cormorant Garamond', serif",
-              fontSize: "1.6rem",
-              fontWeight: 300,
-              color: "#fff",
+              fontSize: label === "Seconds" ? "1.7rem" : "1.55rem",
+              fontWeight: 300, lineHeight: 1,
+              color: label === "Seconds" ? "#fb7185" : "#fff",
+              letterSpacing: "-0.02em",
+              transition: "color .4s",
             }}>
               {value}
             </span>
             <span style={{
               fontFamily: "'DM Sans', sans-serif",
-              fontSize: 9,
-              letterSpacing: 2,
-              textTransform: "uppercase",
-              color: "#9f6472",
-              marginTop: 5,
+              fontSize: 9, letterSpacing: 2, textTransform: "uppercase",
+              color: "#9f6472", marginTop: 5,
             }}>
               {label}
             </span>
@@ -211,15 +177,12 @@ const BirthTimer = () => {
 };
 
 // ─── PARTICLES ───────────────────────────────────────────────────────────────
-const ParticleCanvas = ({ active }: { active: boolean }) => {
-  const ref = useRef<HTMLCanvasElement | null>(null);
+const ParticleCanvas = ({ active }) => {
+  const ref = useRef(null);
   useEffect(() => {
     if (!active) return;
-const canvas = ref.current;
-if (!canvas) return;
-
-let raf: number;const ctx = canvas.getContext("2d");
-if (!ctx) return;
+    const canvas = ref.current;
+    const ctx = canvas.getContext("2d");
     canvas.width  = window.innerWidth;
     canvas.height = window.innerHeight;
     const W = canvas.width, H = canvas.height;
@@ -234,14 +197,7 @@ if (!ctx) return;
       color: ["#f43f5e","#fb7185","#fda4af","#f59e0b","#c084fc"][Math.floor(Math.random()*5)],
     }));
 
-    const drawHeart = (
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  s: number,
-  a: number,
-  col: string
-) => {
+    const drawHeart = (ctx, x, y, s, a, col) => {
       ctx.save();
       ctx.globalAlpha = a;
       ctx.fillStyle = col;
@@ -253,7 +209,7 @@ if (!ctx) return;
       ctx.restore();
     };
 
-    let raf: number;
+    let raf;
     const tick = () => {
       ctx.clearRect(0, 0, W, H);
       hearts.forEach(p => {
@@ -270,14 +226,11 @@ if (!ctx) return;
 };
 
 // ─── BLOOM ────────────────────────────────────────────────────────────────────
-const PetalBloom = ({ onComplete }: { onComplete: () => void }) => {
-  const ref = useRef<HTMLCanvasElement | null>(null);
+const PetalBloom = ({ onComplete }) => {
+  const ref = useRef(null);
   useEffect(() => {
-const canvas = ref.current;
-if (!canvas) return;
-
-let raf: number;const ctx = canvas.getContext("2d");
-if (!ctx) return;
+    const canvas = ref.current;
+    const ctx = canvas.getContext("2d");
     canvas.width  = window.innerWidth;
     canvas.height = window.innerHeight;
     const W = canvas.width, H = canvas.height;
@@ -309,7 +262,7 @@ if (!ctx) return;
       ctx.fill(); ctx.restore();
     };
 
-    let raf: number;
+    let raf;
     const tick = () => {
       ctx.clearRect(0, 0, W, H);
       ctx.fillStyle = "#0d0007"; ctx.fillRect(0, 0, W, H);
@@ -544,34 +497,21 @@ const story = [
 
 // ─── CONFETTI COMPONENT ───────────────────────────────────────────────────────
 const TinyConfetti = () => {
-  const ref = useRef<HTMLCanvasElement | null>(null);
+  const ref = useRef(null);
   useEffect(() => {
     const canvas = ref.current;
-    let raf: number;const ctx = canvas.getContext("2d");
-if (!ctx) return;
+    const ctx = canvas.getContext("2d");
     canvas.width  = window.innerWidth;
     canvas.height = window.innerHeight;
     const W = canvas.width, H = canvas.height;
-    type ConfettiPiece = {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  vy: number;
-  vx: number;
-  rot: number;
-  drot: number;
-  color: string;
-};
-
-const pieces: ConfettiPiece[] = Array.from({ length: 80 }, () => ({
+    const pieces = Array.from({ length: 80 }, () => ({
       x: Math.random() * W, y: Math.random() * H - H,
       w: Math.random()*8+4, h: Math.random()*4+3,
       vy: Math.random()*2+1, vx: (Math.random()-.5)*1.5,
       rot: Math.random()*360, drot: (Math.random()-.5)*4,
       color:["#f43f5e","#fb7185","#f59e0b","#c084fc","#34d399","#fda4af"][Math.floor(Math.random()*6)],
     }));
-    let raf: number;
+    let raf;
     const tick = () => {
       ctx.clearRect(0,0,W,H);
       pieces.forEach(p => {
