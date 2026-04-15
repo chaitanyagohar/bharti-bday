@@ -552,7 +552,19 @@ if (!ctx) return;
     canvas.width  = window.innerWidth;
     canvas.height = window.innerHeight;
     const W = canvas.width, H = canvas.height;
-    const pieces = Array.from({ length: 80 }, () => ({
+    type ConfettiPiece = {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  vy: number;
+  vx: number;
+  rot: number;
+  drot: number;
+  color: string;
+};
+
+const pieces: ConfettiPiece[] = Array.from({ length: 80 }, () => ({
       x: Math.random() * W, y: Math.random() * H - H,
       w: Math.random()*8+4, h: Math.random()*4+3,
       vy: Math.random()*2+1, vx: (Math.random()-.5)*1.5,
