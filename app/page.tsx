@@ -96,7 +96,7 @@ const FontLoader = () => (
 
 const BIRTH = new Date("2001-04-16T00:00:00+05:30"); // important for India time
 
-const pad = (n) => String(n).padStart(2, "0");
+const pad = (n: number) => String(n).padStart(2, "0");
 
 const BirthTimer = () => {
   const [now, setNow] = useState(new Date());
@@ -132,7 +132,7 @@ const BirthTimer = () => {
     BIRTH.getSeconds()
   );
 
-  const diff = now - lastBirthday;
+  const diff = now.getTime() - lastBirthday.getTime();
 
   const totalSec = Math.floor(diff / 1000);
   const seconds = totalSec % 60;
@@ -211,12 +211,15 @@ const BirthTimer = () => {
 };
 
 // ─── PARTICLES ───────────────────────────────────────────────────────────────
-const ParticleCanvas = ({ active }) => {
-  const ref = useRef(null);
+const ParticleCanvas = ({ active }: { active: boolean }) => {
+  const ref = useRef<HTMLCanvasElement | null>(null);
   useEffect(() => {
     if (!active) return;
-    const canvas = ref.current;
-    const ctx = canvas.getContext("2d");
+const canvas = ref.current;
+if (!canvas) return;
+
+let raf: number;const ctx = canvas.getContext("2d");
+if (!ctx) return;
     canvas.width  = window.innerWidth;
     canvas.height = window.innerHeight;
     const W = canvas.width, H = canvas.height;
@@ -231,7 +234,14 @@ const ParticleCanvas = ({ active }) => {
       color: ["#f43f5e","#fb7185","#fda4af","#f59e0b","#c084fc"][Math.floor(Math.random()*5)],
     }));
 
-    const drawHeart = (ctx, x, y, s, a, col) => {
+    const drawHeart = (
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  s: number,
+  a: number,
+  col: string
+) => {
       ctx.save();
       ctx.globalAlpha = a;
       ctx.fillStyle = col;
@@ -243,7 +253,7 @@ const ParticleCanvas = ({ active }) => {
       ctx.restore();
     };
 
-    let raf;
+    let raf: number;
     const tick = () => {
       ctx.clearRect(0, 0, W, H);
       hearts.forEach(p => {
@@ -260,11 +270,14 @@ const ParticleCanvas = ({ active }) => {
 };
 
 // ─── BLOOM ────────────────────────────────────────────────────────────────────
-const PetalBloom = ({ onComplete }) => {
-  const ref = useRef(null);
+const PetalBloom = ({ onComplete }: { onComplete: () => void }) => {
+  const ref = useRef<HTMLCanvasElement | null>(null);
   useEffect(() => {
-    const canvas = ref.current;
-    const ctx = canvas.getContext("2d");
+const canvas = ref.current;
+if (!canvas) return;
+
+let raf: number;const ctx = canvas.getContext("2d");
+if (!ctx) return;
     canvas.width  = window.innerWidth;
     canvas.height = window.innerHeight;
     const W = canvas.width, H = canvas.height;
@@ -296,7 +309,7 @@ const PetalBloom = ({ onComplete }) => {
       ctx.fill(); ctx.restore();
     };
 
-    let raf;
+    let raf: number;
     const tick = () => {
       ctx.clearRect(0, 0, W, H);
       ctx.fillStyle = "#0d0007"; ctx.fillRect(0, 0, W, H);
@@ -531,10 +544,11 @@ const story = [
 
 // ─── CONFETTI COMPONENT ───────────────────────────────────────────────────────
 const TinyConfetti = () => {
-  const ref = useRef(null);
+  const ref = useRef<HTMLCanvasElement | null>(null);
   useEffect(() => {
     const canvas = ref.current;
-    const ctx = canvas.getContext("2d");
+    let raf: number;const ctx = canvas.getContext("2d");
+if (!ctx) return;
     canvas.width  = window.innerWidth;
     canvas.height = window.innerHeight;
     const W = canvas.width, H = canvas.height;
@@ -545,7 +559,7 @@ const TinyConfetti = () => {
       rot: Math.random()*360, drot: (Math.random()-.5)*4,
       color:["#f43f5e","#fb7185","#f59e0b","#c084fc","#34d399","#fda4af"][Math.floor(Math.random()*6)],
     }));
-    let raf;
+    let raf: number;
     const tick = () => {
       ctx.clearRect(0,0,W,H);
       pieces.forEach(p => {
