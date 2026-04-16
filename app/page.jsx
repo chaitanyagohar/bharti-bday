@@ -72,7 +72,7 @@ const FontLoader = () => (
     /* Slice cut line */
     @keyframes cuttingLine {
       0%   { height: 0; }
-      100% { height: 100%; }
+      100% { height: 60%; }
     }
 
     /* Pulse ring */
@@ -94,35 +94,58 @@ const FontLoader = () => (
   `}</style>
 );
 
-// ─── BIRTH TIMER ─────────────────────────────────────────────────────────────
-const BIRTH = new Date("2001-04-16T00:00:00");
+const BIRTH = new Date("2001-04-16T00:00:00+05:30"); // important for India time
 
 const pad = (n) => String(n).padStart(2, "0");
 
 const BirthTimer = () => {
-  const [elapsed, setElapsed] = useState(() => Date.now() - BIRTH.getTime());
+  const [now, setNow] = useState(new Date());
 
   useEffect(() => {
-    const id = setInterval(() => setElapsed(Date.now() - BIRTH.getTime()), 1000);
+    const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
 
-  const totalSec  = Math.floor(elapsed / 1000);
-  const seconds   = totalSec % 60;
-  const totalMin  = Math.floor(totalSec / 60);
-  const minutes   = totalMin % 60;
-  const totalHr   = Math.floor(totalMin / 60);
-  const hours     = totalHr % 24;
-  const totalDays = Math.floor(totalHr / 24);
-  const years     = Math.floor(totalDays / 365.25);
-  const months    = Math.floor((totalDays % 365.25) / 30.44);
-  const days      = Math.floor(totalDays % 30.44);
+  // --- CALCULATIONS ---
+  let years = now.getFullYear() - BIRTH.getFullYear();
+
+  const thisYearBirthday = new Date(
+    now.getFullYear(),
+    BIRTH.getMonth(),
+    BIRTH.getDate(),
+    BIRTH.getHours(),
+    BIRTH.getMinutes(),
+    BIRTH.getSeconds()
+  );
+
+  // adjust if birthday hasn't happened yet this year
+  if (now < thisYearBirthday) {
+    years--;
+  }
+
+  const lastBirthday = new Date(
+    now.getFullYear() - (now < thisYearBirthday ? 1 : 0),
+    BIRTH.getMonth(),
+    BIRTH.getDate(),
+    BIRTH.getHours(),
+    BIRTH.getMinutes(),
+    BIRTH.getSeconds()
+  );
+
+  const diff = now - lastBirthday;
+
+  const totalSec = Math.floor(diff / 1000);
+  const seconds = totalSec % 60;
+  const totalMin = Math.floor(totalSec / 60);
+  const minutes = totalMin % 60;
+  const totalHr = Math.floor(totalMin / 60);
+  const hours = totalHr % 24;
+  const days = Math.floor(totalHr / 24);
 
   const units = [
-    { label: "Years",   value: years },
-    { label: "Months",  value: months },
-    { label: "Days",    value: days },
-    { label: "Hours",   value: pad(hours) },
+    { label: "Years", value: years },
+    { label: "Days", value: days },
+    { label: "Hours", value: pad(hours) },
     { label: "Minutes", value: pad(minutes) },
     { label: "Seconds", value: pad(seconds) },
   ];
@@ -136,36 +159,47 @@ const BirthTimer = () => {
     >
       <p style={{
         fontFamily: "'DM Sans', sans-serif",
-        color: "#9f6472", fontSize: 11,
-        letterSpacing: 4, textTransform: "uppercase", marginBottom: 14,
+        color: "#9f6472",
+        fontSize: 11,
+        letterSpacing: 4,
+        textTransform: "uppercase",
+        marginBottom: 14,
       }}>
         The world got luckier since
       </p>
 
       <div style={{
-        display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap",
+        display: "flex",
+        gap: 10,
+        justifyContent: "center",
+        flexWrap: "wrap",
       }}>
         {units.map(({ label, value }) => (
           <div key={label} style={{
-            display: "flex", flexDirection: "column", alignItems: "center",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
             background: "rgba(244,63,94,.06)",
             border: "1px solid rgba(244,63,94,.18)",
-            borderRadius: 14, padding: "10px 14px", minWidth: 58,
+            borderRadius: 14,
+            padding: "10px 14px",
+            minWidth: 58,
           }}>
             <span style={{
               fontFamily: "'Cormorant Garamond', serif",
-              fontSize: label === "Seconds" ? "1.7rem" : "1.55rem",
-              fontWeight: 300, lineHeight: 1,
-              color: label === "Seconds" ? "#fb7185" : "#fff",
-              letterSpacing: "-0.02em",
-              transition: "color .4s",
+              fontSize: "1.6rem",
+              fontWeight: 300,
+              color: "#fff",
             }}>
               {value}
             </span>
             <span style={{
               fontFamily: "'DM Sans', sans-serif",
-              fontSize: 9, letterSpacing: 2, textTransform: "uppercase",
-              color: "#9f6472", marginTop: 5,
+              fontSize: 9,
+              letterSpacing: 2,
+              textTransform: "uppercase",
+              color: "#9f6472",
+              marginTop: 5,
             }}>
               {label}
             </span>
