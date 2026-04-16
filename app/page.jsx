@@ -216,11 +216,12 @@ const Snd = {
 };
 
 // ─── BIRTH TIMER ──────────────────────────────────────────────────────────────
-const BIRTH = new Date("2001-04-16T00:00:00");
+const BIRTH = new Date("2001-04-16T00:00:00+05:30");
 const pad   = n => String(n).padStart(2, "0");
 
 const BirthTimer = () => {
   const [elapsed, setElapsed] = useState(() => Date.now() - BIRTH.getTime());
+  const [mounted, setMounted] = useState(false);
   useEffect(() => {
     const id = setInterval(() => setElapsed(Date.now() - BIRTH.getTime()), 1000);
     return () => clearInterval(id);
@@ -607,7 +608,7 @@ const TinyConfetti = () => {
 };
 
 // ─── STORY SLIDE ──────────────────────────────────────────────────────────────
-const StorySlide = ({ slide, index, total, onNext }) => {
+const StorySlide = ({ slide, index, total, onNext, setPhase }) => {
   const isRight = slide.layout === "right";
   const isFinal = slide.layout === "final";
   return (
@@ -682,6 +683,26 @@ const StorySlide = ({ slide, index, total, onNext }) => {
                 fontFamily:"'Cormorant Garamond',serif", fontSize:"1.6rem", fontStyle:"italic",
                 color:"#fff", boxShadow:"0 8px 32px rgba(244,63,94,.4)" }}>
               I love you, Bharti ❤️
+           
+<motion.button
+  whileHover={{ scale: 1.05 }}
+  whileTap={{ scale: 0.95 }}
+  onClick={() => setPhase("permission")}
+  style={{
+    marginTop: "20px",
+    padding: "12px 28px",
+    background: "transparent",
+    border: "1px solid #f59e0b",
+    color: "#f59e0b",
+    borderRadius: "50px",
+    fontFamily: "'DM Sans', sans-serif",
+    cursor: "pointer",
+    fontSize: "14px",
+    letterSpacing: "2px"
+  }}
+>
+  ASK ME? ✦
+</motion.button>
             </motion.div>
           )}
         </div>
@@ -703,7 +724,7 @@ export default function BhartiBirthdaySite() {
   const [cakeDone, setCakeDone] = useState(false);
   const [audioOn,  setAudioOn]  = useState(false);
   const audioStarted = useRef(false);
-
+ 
   const initAudio = useCallback(() => {
     if (audioStarted.current) return;
     audioStarted.current = true;
@@ -815,7 +836,7 @@ export default function BhartiBirthdaySite() {
               </div>
               <p className="cormorant shimmer-text"
                 style={{ fontSize:"clamp(1.8rem,5vw,3.2rem)", fontWeight:300, lineHeight:1.2 }}>
-                🎂 Happy Birthday Bharti 🎂
+                🎂 Happy Birthday Baby 🎂
               </p>
               <p style={{ fontFamily:"'DM Sans',sans-serif", color:"#9f6472", fontSize:12, marginTop:14, letterSpacing:3 }}>
                 ♪ your song is playing…
@@ -838,7 +859,7 @@ export default function BhartiBirthdaySite() {
             </div>
             <AnimatePresence mode="wait">
               <StorySlide key={step} slide={story[step]} index={step} total={story.length}
-                onNext={() => setStep(s => Math.min(s+1, story.length-1))}/>
+                onNext={() => setStep(s => Math.min(s+1, story.length-1))} setPhase={setPhase}/>
             </AnimatePresence>
             <div style={{ position:"fixed", bottom:28, left:"50%", transform:"translateX(-50%)",
               display:"flex", gap:8, zIndex:10 }}>
@@ -852,6 +873,69 @@ export default function BhartiBirthdaySite() {
             </div>
           </div>
         )}
+        {/* ── PERMISSION PAGE ── */}
+{phase === "permission" && (
+  <motion.div 
+    initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+    style={{ height: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center" }}
+  >
+    <h2 className="cormorant" style={{ fontSize: "2.5rem", color: "#fff", marginBottom: "30px" }}>
+      I need a permission madamji...
+    </h2>
+    <motion.button
+      onClick={() => setPhase("instagram")}
+      className="pulse-ring"
+      style={{
+        padding: "15px 40px",
+        background: "#f43f5e",
+        border: "none",
+        borderRadius: "50px",
+        color: "#fff",
+        fontFamily: "'DM Sans'",
+        cursor: "pointer"
+      }}
+    >
+      Click to see 🫣
+    </motion.button>
+  </motion.div>
+)}
+
+{/* ── INSTAGRAM APPROVAL PAGE ── */}
+{phase === "instagram" && (
+  <motion.div 
+    initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+    style={{ height: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px" }}
+  >
+    <p style={{ color: "#9f6472", fontSize: "12px", letterSpacing: "2px", marginBottom: "15px" }}>PROPOSED INSTAGRAM STORY</p>
+    
+    <div style={{ 
+      width: "280px", height: "500px", borderRadius: "20px", overflow: "hidden", 
+      border: "4px solid #f43f5e", boxShadow: "0 20px 50px rgba(0,0,0,0.5)", position: "relative" 
+    }}>
+      <img src="/story-pre.jpeg" alt="Story Preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+    </div>
+
+    <div style={{ display: "flex", gap: "20px", marginTop: "30px" }}>
+      <button 
+        onClick={async () => {
+          // Trigger Email Confirmation
+          await fetch('/api/send-approval', { method: 'POST' }); 
+          alert("Permission Granted! ❤️ Check your email, Chaitanya.");
+        }}
+        style={{ padding: "12px 30px", background: "#22c55e", color: "#fff", border: "none", borderRadius: "10px", fontWeight: "bold" }}
+      >
+        APPROVE ✅
+      </button>
+      
+      <button 
+        onClick={() => alert("Try again later... 🥲")}
+        style={{ padding: "12px 30px", background: "rgba(255,255,255,0.1)", color: "#fff", border: "1px solid #f43f5e", borderRadius: "10px" }}
+      >
+        REJECT ❌
+      </button>
+    </div>
+  </motion.div>
+)}
 
       </div>
     </>
