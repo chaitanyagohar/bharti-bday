@@ -316,17 +316,17 @@ const PetalBloom = ({ onComplete }) => {
   return <canvas ref={ref} style={{ position:"fixed", inset:0, zIndex:50 }} />;
 };
 
-const CakeScene = ({ onCut }: { onCut: () => void }) => {
-  const [phase, setPhase] = useState<"idle" | "cutting" | "cut">("idle");
+// ─── CAKE ─────────────────────────────────────────────────────────────────────
+const CakeScene = ({ onCut }) => {
+  const [phase, setPhase] = useState("idle"); // idle | hover | cutting | cut | blown
   const [candleBlown, setCandleBlown] = useState(false);
   const [cuttingPct, setCuttingPct] = useState(0);
-  const [showWish, setShowWish] = useState(false);
-
-  const cutRef = useRef<HTMLDivElement | null>(null);
+  const [showWish, setShowWish]       = useState(false);
+  const cutRef = useRef(null);
   const isDragging = useRef(false);
   const startY = useRef(0);
 
-  // 🎂 Blow candle
+  // Blow candle on click
   const blowCandle = () => {
     if (candleBlown) return;
     setCandleBlown(true);
@@ -334,59 +334,39 @@ const CakeScene = ({ onCut }: { onCut: () => void }) => {
     setTimeout(() => setShowWish(false), 2800);
   };
 
-  // 🔪 START CUT
-  const startCut = (e: React.PointerEvent) => {
+  // Knife drag handlers
+  const startCut = (e) => {
     isDragging.current = true;
-    startY.current = e.clientY;
+    startY.current = e.touches ? e.touches[0].clientY : e.clientY;
     setPhase("cutting");
   };
-
-  // 🔪 MOVE CUT (SMOOTH)
-  const moveCut = useCallback((e: PointerEvent) => {
+  const moveCut = useCallback((e) => {
     if (!isDragging.current) return;
-
-    const dy = e.clientY - startY.current;
-
-    let pct = (dy / 180) * 100;
-    pct = Math.max(0, Math.min(100, pct));
-
-    // smooth interpolation
-    setCuttingPct((prev) => prev + (pct - prev) * 0.2);
-
-    if (pct >= 98) {
-      isDragging.current = false;
-      setPhase("cut");
-      setTimeout(onCut, 700);
-    }
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    const dy = clientY - startY.current;
+    const pct = Math.min(100, Math.max(0, (dy / 160) * 100));
+    setCuttingPct(pct);
+    if (pct >= 98) { isDragging.current = false; setPhase("cut"); setTimeout(onCut, 900); }
   }, [onCut]);
+  const endCut = () => { if (phase !== "cut") { setPhase("idle"); setCuttingPct(0); } isDragging.current = false; };
 
-  // 🔪 END CUT
-  const endCut = () => {
-    if (!isDragging.current) return;
-
-    isDragging.current = false;
-
-    if (phase !== "cut") {
-      setCuttingPct(0);
-      setPhase("idle");
-    }
-  };
-
-  // 🎯 POINTER EVENTS (WORKS ON MOBILE + DESKTOP)
   useEffect(() => {
-    window.addEventListener("pointermove", moveCut);
-    window.addEventListener("pointerup", endCut);
-
+    window.addEventListener("mousemove", moveCut);
+    window.addEventListener("mouseup", endCut);
+    window.addEventListener("touchmove", moveCut);
+    window.addEventListener("touchend", endCut);
     return () => {
-      window.removeEventListener("pointermove", moveCut);
-      window.removeEventListener("pointerup", endCut);
+      window.removeEventListener("mousemove", moveCut);
+      window.removeEventListener("mouseup", endCut);
+      window.removeEventListener("touchmove", moveCut);
+      window.removeEventListener("touchend", endCut);
     };
   }, [moveCut, phase]);
 
   const isCut = phase === "cut";
 
   return (
-    <div style={{ position:"relative", display:"flex", flexDirection:"column", alignItems:"center", gap:16 }}>
+    <div style={{ position:"relative", display:"flex", flexDirection:"column", alignItems:"center", gap: 16 }}>
 
       {/* Wish popup */}
       <AnimatePresence>
@@ -398,8 +378,10 @@ const CakeScene = ({ onCut }: { onCut: () => void }) => {
             style={{
               position:"absolute", top:-70, left:"50%", transform:"translateX(-50%)",
               background:"linear-gradient(135deg,#f43f5e,#f59e0b)",
-              borderRadius:20, padding:"10px 22px",
-              fontFamily:"DM Sans", color:"#fff"
+              borderRadius:20, padding:"10px 22px", whiteSpace:"nowrap",
+              fontFamily:"'DM Sans',sans-serif", color:"#fff", fontSize:15, fontWeight:500,
+              boxShadow:"0 8px 30px rgba(244,63,94,.4)",
+              zIndex:10,
             }}
           >
             ✨ Make a wish, Bharti! ✨
@@ -407,78 +389,136 @@ const CakeScene = ({ onCut }: { onCut: () => void }) => {
         )}
       </AnimatePresence>
 
-      {/* CAKE */}
-      <svg width="260" height="200" viewBox="0 0 260 200"
-        style={{ cursor: candleBlown ? "default" : "pointer" }}
-        onClick={blowCandle}
-      >
+      {/* ── CAKE SVG ── */}
+      <svg width="260" height="200" viewBox="0 0 260 200" style={{ overflow:"visible", cursor: candleBlown ? "default" : "pointer" }} onClick={blowCandle}>
+
+        {/* plate */}
+        <ellipse cx="130" cy="185" rx="110" ry="14" fill="#2a0015" />
+        <ellipse cx="130" cy="183" rx="106" ry="11" fill="#3d0020" />
+
+        {/* bottom tier */}
         <rect x="30" y="120" width="200" height="65" rx="10" fill="#be185d" />
+        <rect x="30" y="120" width="200" height="18" rx="8" fill="#db2777" />
+        {/* frosting drips bottom */}
+        {[50,75,100,125,150,175,200].map((x, i) => (
+          <ellipse key={i} cx={x} cy={126} rx={9} ry={12} fill="#fbcfe8" opacity=".9" />
+        ))}
+        {/* stripe decoration */}
+        {[55,90,125,160,195].map((x, i) => (
+          <rect key={i} x={x} y={138} width={8} height={28} rx={4} fill="#f9a8d4" opacity=".5" />
+        ))}
+
+        {/* middle tier */}
         <rect x="55" y="72" width="150" height="55" rx="9" fill="#e11d48" />
+        <rect x="55" y="72" width="150" height="16" rx="7" fill="#f43f5e" />
+        {[72,98,124,150,176].map((x, i) => (
+          <ellipse key={i} cx={x} cy={77} rx={8} ry={10} fill="#fbcfe8" opacity=".85" />
+        ))}
+        {[70,100,130,160,190].map((x, i) => (
+          <circle key={i} cx={x} cy={98} r={4} fill="#fda4af" opacity=".6" />
+        ))}
+
+        {/* top tier */}
         <rect x="90" y="35" width="80" height="44" rx="8" fill="#f43f5e" />
+        <rect x="90" y="35" width="80" height="14" rx="6" fill="#fb7185" />
+        {[100,120,140,158].map((x, i) => (
+          <ellipse key={i} cx={x} cy={39} rx={7} ry={8} fill="#fbcfe8" opacity=".8" />
+        ))}
 
-        {/* candle */}
+        {/* Candle */}
         <rect x="124" y="14" width="12" height="26" rx="3" fill="#fde68a" />
+        <rect x="124" y="14" width="12" height="8" rx="3" fill="#fbbf24" />
+        {/* wick */}
+        <line x1="130" y1="6" x2="130" y2="14" stroke="#78350f" strokeWidth="2" strokeLinecap="round" />
 
-        {!candleBlown && (
-          <circle cx="130" cy="6" r="5" fill="#fbbf24" />
+        {/* Flame */}
+        {!candleBlown ? (
+          <g className="flame" style={{ transformOrigin:"130px 8px" }}>
+            <ellipse cx="130" cy="6" rx="5" ry="8" fill="#fbbf24" opacity=".95" />
+            <ellipse cx="130" cy="7" rx="3" ry="5" fill="#fef3c7" />
+            <ellipse cx="130" cy="3" rx="4" ry="7" fill="#f97316" opacity=".7" />
+          </g>
+        ) : (
+          /* smoke wisps */
+          <>
+            <line x1="130" y1="6" x2="128" y2="-14" stroke="#6b7280" strokeWidth="1.5" strokeLinecap="round" opacity=".5" className="smoke" />
+            <line x1="130" y1="6" x2="132" y2="-10" stroke="#6b7280" strokeWidth="1"   strokeLinecap="round" opacity=".4" className="smoke" />
+          </>
         )}
 
+        {/* Cut effect */}
         {isCut && (
-          <line x1="130" y1="0" x2="130" y2="185"
-            stroke="#fda4af" strokeWidth="2"
-          />
+          <>
+            <polygon points="130,35 90,185 130,185" fill="#9f1239" opacity=".85" />
+            <line x1="130" y1="0" x2="130" y2="185" stroke="#fda4af" strokeWidth="2" strokeDasharray="4 3" opacity=".6" />
+          </>
         )}
+
+        {/* Number "25" on middle tier */}
+        <text x="130" y="106" textAnchor="middle" fontFamily="'Cormorant Garamond',serif"
+          fontSize="20" fontWeight="600" fill="#fff" opacity=".9">25</text>
       </svg>
 
-      {/* KNIFE */}
+      {/* ── KNIFE ── */}
       {candleBlown && !isCut && (
         <motion.div
           initial={{ opacity:0, y:-20 }}
           animate={{ opacity:1, y:0 }}
+          style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:6, marginTop:4 }}
         >
-          <p style={{ color:"#fda4af", fontSize:13 }}>
-            drag the knife down ↓
+          <p style={{ fontFamily:"'DM Sans',sans-serif", color:"#fda4af", fontSize:13, opacity:.8 }}>
+            drag the knife down to cut ↓
           </p>
-
           <div
             ref={cutRef}
-            onPointerDown={startCut}
+            onMouseDown={startCut}
+            onTouchStart={startCut}
             style={{
-              touchAction: "none", // 🔥 mobile fix
-              cursor:"ns-resize"
+              position:"relative", cursor:"ns-resize", userSelect:"none",
+              display:"flex", flexDirection:"column", alignItems:"center",
             }}
           >
-            <svg width="48" height="130"
-              style={{
-                transform:`translateY(${cuttingPct * 1.4}px)`,
-                transition: isDragging.current ? "none" : "transform .2s ease"
-              }}
-            >
+            {/* Knife SVG */}
+            <svg width="48" height="130" viewBox="0 0 48 130" style={{ filter:"drop-shadow(0 4px 12px rgba(244,63,94,.5))", transform:`translateY(${cuttingPct * 1.4}px)`, transition: isDragging.current ? "none" : "transform .3s ease" }}>
+              {/* Handle */}
               <rect x="18" y="0" width="12" height="38" rx="6" fill="#7f1d1d" />
+              <rect x="20" y="4" width="8" height="30" rx="4" fill="#991b1b" opacity=".6" />
+              {/* Guard */}
+              <rect x="10" y="36" width="28" height="6" rx="3" fill="#6b7280" />
+              {/* Blade */}
               <path d="M22 42 L26 42 L28 128 L20 128 Z" fill="#d1d5db" />
+              <path d="M24 42 L26 42 L28 128 L24 128 Z" fill="#9ca3af" />
+              {/* Shine */}
+              <line x1="23" y1="48" x2="25" y2="120" stroke="#fff" strokeWidth="1" opacity=".5" />
             </svg>
+
+            {/* Cut progress bar */}
+            <div style={{ position:"absolute", top:44, left:"50%", transform:"translateX(-50%)", width:2, height:128, background:"rgba(244,63,94,.15)", borderRadius:2 }}>
+              <div style={{ width:"100%", height:`${cuttingPct}%`, background:"linear-gradient(to bottom,#f43f5e,#fda4af)", borderRadius:2, transition:"height .05s" }} />
+            </div>
           </div>
         </motion.div>
       )}
 
       {!candleBlown && (
-        <p style={{ color:"#fda4af", fontSize:13 }}>
-          tap flame to blow candle 🕯️
+        <p style={{ fontFamily:"'DM Sans',sans-serif", color:"#fda4af", fontSize:13, marginTop:4, opacity:.75 }}>
+          tap the flame to blow the candle 🕯️
         </p>
       )}
 
       {isCut && (
         <motion.p
-          initial={{ opacity:0 }}
-          animate={{ opacity:1 }}
-          style={{ color:"#fb7185", fontSize:20 }}
+          initial={{ opacity:0, scale:.8 }}
+          animate={{ opacity:1, scale:1 }}
+          style={{ fontFamily:"'Cormorant Garamond',serif", color:"#fb7185", fontSize:22, fontStyle:"italic", marginTop:4 }}
         >
-          🎂 Happy Birthday Bharti!
+          🎂 Happy Birthday Bharti! 🎂
         </motion.p>
       )}
     </div>
   );
 };
+
 // ─── STORY DATA ───────────────────────────────────────────────────────────────
 const story = [
   { title: "Your Beauty",        text: "25 ki ho gayi ho tum… but your beauty is not just something I see, it's something I feel.",                         media1: "/img-1.jpeg",  media2: "/img-2.jpeg",  layout: "left"  },
@@ -767,7 +807,7 @@ export default function BhartiBirthdaySite() {
                 style={{
                   fontSize:"clamp(2rem,6vw,4.5rem)",
                   fontWeight:300, fontStyle:"italic",
-                  color:"#fda4af", marginBottom:36,
+                  color:"#fda4af", marginBottom:10,
                 }}
               >
                 Bharti 🌸
