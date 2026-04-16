@@ -38,7 +38,7 @@ const FontLoader = () => (
     canvas.particle-canvas { position: fixed; inset: 0; pointer-events: none; }
 
     /* Scroll snap */
-    .snap-container { scroll-snap-type: y mandatory; overflow-y: scroll; height: 100vh; }
+    .snap-container { scroll-snap-type: y mandatory; overflow-y: scroll; overflow: hidden; touch-action: none; }
     .snap-section   { scroll-snap-align: start; }
 
     /* Shimmer text */
